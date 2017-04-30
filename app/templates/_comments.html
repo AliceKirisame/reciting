@@ -1,0 +1,45 @@
+<ul class="comments">
+    {% for comment in comments %}
+        <li class="comment">
+            <div class="comment-date">{{moment(comment.timestamp).fromNow()}}</div>
+
+            <div class="comment-author">
+                <a href="{{ url_for('main.user', username=comment.author.username) }}"> 
+                    {{comment.author.username}}
+                </a>
+            </div>
+
+            <div class="comment-content">
+                <div class="comment-body">
+                    {% if comment.disabled %}
+                        <p>hidden comment</p>
+                     {% endif %}
+
+                    {% if not comment.disabled or current_user.can(Permission.MODERATE_COMMENTS) %}
+                        {% if comment.body_html %}
+                            {{ comment.body_html | safe }}
+                        {% else %}
+                            {{ comment.body }}
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="comment-footer">
+                {% if current_user.can(Permission.MODERATE_COMMENTS) %}
+
+                    {% if not comment.disabled %}
+                    <a class="btn btn-danger" href="{{ url_for('main.moderate_disable', id=comment.id, page=pagination.page or 1 )}}">
+                        Disable
+                    </a>
+                    {% else %}
+                    <a class="btn btn-default" href="{{ url_for('main.moderate_enable', id=comment.id, page=pagination.page or 1 )}}">
+                        Enable
+                    </a>
+                    {% endif %}
+
+                {% endif %}
+            </div>
+        </li>
+    {% endfor %}
+</ul>

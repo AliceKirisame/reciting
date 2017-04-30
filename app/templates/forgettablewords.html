@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% import '_macros.html' as macros %}
+
+{% block title %} forgettable-words {% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1> Forgettable Words </h1>
+    </div>
+
+    <div class="page-content">
+        {% include '_words.html' %}
+        <div class="pagination">
+            {{ macros.pagination_widget(pagination, endpoint) }}
+        </div>
+    </div>
+{% endblock %}

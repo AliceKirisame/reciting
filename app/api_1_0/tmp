@@ -1,0 +1,350 @@
+import xml.etree.cElementTree as ET
+import time
+import re
+
+from flask import request, make_response
+
+from .. import db
+from ..models import User, Food, Order, OrderDetail
+
+def getFoodNumList(s):
+
+	fo = r'^\#\(((?:\d{1,9}\,)*)(\d{1,9})\)$'
+
+	m  = re.match(fo, s)
+
+	if m is not None :
+		gs = m.groups()
+		head = gs[0]
+		tail = gs[1]
+		nowNum = ''
+		numList = []
+
+		for c in head:
+			if c != ',':
+				nowNum += c
+			else:
+				numList.append(int(nowNum))
+				nowNum = ''
+
+		numList.append(int(tail))
+
+		return numList
+	
+	else:
+		return None
+
+class Msg(object):
+
+    def __init__(self, xmlData=None,ToUserName=None, FromUserName=None, CreateTime=None, MsgType=None):
+
+        if xmlData != None:
+
+            self.ToUserName = xmlData.find('ToUserName').text
+            self.FromUserName = xmlData.find('FromUserName').text
+            self.MsgType = xmlData.find('MsgType').text
+            self.CreateTime = xmlData. find('CreateTime').text
+            self.MsgId = xmlData.find('MsgId').text
+        else:
+            self.ToUserName = ToUserName
+            self.FromUserName = FromUserName
+            self.MsgType = MsgType
+            self.CreateTime = CreateTime
+
+class TextMsg(Msg):
+
+    def __init__(self, xmlData=None,ToUserName=None, FromUserName=None, CreateTime=None, MsgType=None,  Content=None):
+        
+        Msg.__init__(self, xmlData, ToUserName, FromUserName, CreateTime, MsgType)
+
+        if xmlData != None:
+            self.Content = xmlData.find('Content').text
+        
+        else:
+            self.Content = Content
+
+
+class ImgMsg(Msg):
+
+    def __init__(self, xmlData=None,ToUserName=None, FromUserName=None, CreateTime=None, MsgType=None,  MediaId=None):
+        
+        Msg.__init__(self, xmlData, ToUserName, FromUserName, CreateTime, MsgType)
+        
+        if xmlData != None:
+            self.PicUrl = xmlData.find('PicUrl').text
+            self.MediaId = xmlData.find('MediaId').text
+
+        else:
+            self.MediaId = MediaId
+
+
+def DefaultReply(ToUserName,FromUserName):
+
+    return TextMsg(None, ToUserName, FromUserName, str(int(time.time())), 'text', '未识别消息类型')
+
+def GetMsgFromRequest():
+
+    xmlData = ET.fromstring(request.data)
+
+    if(xmlData.find('MsgType').text == 'text'):
+        return TextMsg(xmlData=xmlData)
+
+    if(xmlData.find('MsgType').text == 'image'):
+        return ImgMsg(xmlData=xmlData)
+
+    else:
+        return Msg(xmlData)
+
+def MakeResponseFromMsg(Msg):
+
+    ToUserName = Msg.ToUserName
+    FromUserName = Msg.FromUserName
+    MsgType = Msg.MsgType
+    CreateTime = Msg.CreateTime
+
+    if(MsgType == 'text'):
+
+        Content = Msg.Content
+
+        reply = '''<xml>
+                <ToUserName><![CDATA[%s]]></ToUserName>
+                <FromUserName><![CDATA[%s]]></FromUserName>
+                <CreateTime>%s</CreateTime>
+                <MsgType><![CDATA[%s]]></MsgType>
+                <Content><![CDATA[%s]]></Content>
+                </xml>'''
+
+        resp = make_response(reply % (ToUserName, FromUserName, str(int(time.time())),MsgType, Content))
+
+        resp.content_type = 'application/xml'
+
+        return resp
+
+    if(MsgType == 'image'):
+
+        print(Msg.ToUserName, Msg.FromUserName, Msg.MsgType, Msg.CreateTime, Msg.MsgId)
+
+        PicUrl = Msg.PicUrl
+        MediaId = Msg.MediaId
+
+        print(Msg.PicUrl,Msg.MediaId)
+
+        reply = '''<xml>
+                <ToUserName><![CDATA[%s]]></ToUserName>
+                <FromUserName><![CDATA[%s]]></FromUserName>
+                <CreateTime>%s</CreateTime>
+                <MsgType><![CDATA[%s]]></MsgType>
+                <Image>
+                    <MediaId><![CDATA[%s]]></MediaId>
+                </Image>
+                </xml>'''
+
+        resp = make_response(reply % (ToUserName, FromUserName, str(int(time.time())), MsgType, MediaId))
+
+        resp.content_type = 'application/xml'
+
+        return resp
+
+    return 'success'
+
+def ReplyTextMsg(Msg):
+
+    ToUserName = Msg.ToUserName
+    FromUserName = Msg.FromUserName
+    MsgType = Msg.MsgType
+    CreateTime = Msg.CreateTime
+    MsgId = Msg.MsgId
+
+    if MsgType != 'text':
+        
+        return DefaultReply(FromUserName, ToUserName)
+
+    u = User.query.filter_by(wxid=FromUserName).first()
+
+    if u is None:
+        u = User(wxid=FromUserName)
+        db.session.add(u)
+        db.session.commit()
+
+    status = u.status
+
+    Content = Msg.Content
+
+
+    if status == 0:
+    
+        con = '编号  名字  价格\n'
+
+        if Content == '0':
+
+            foods = Food.query.all()
+
+            for food in foods:
+                con += '%d  %s   %d\n' % (food.id, food.name, food.price)
+
+
+            con += '\n\n'
+            con += '遵循召唤而来，为您奉上菜谱？\n\n'
+            con += '操作说明——例子：发送#(1，2，3)分别点编号为1，2，3的菜,不区分中英文括号和逗号\n\n'
+            con += '/**您已进入点菜模式,发送‘#’退出点菜模式**/\n\n'
+            con += '/**您有什么想说的可以和我说说哦，我还可以给您讲个笑话**/'
+
+            u.status = 1
+            db.session.add(u)
+            db.session.commit()
+
+            return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, con)
+
+        else:
+
+            return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, 'zzz...')
+
+    elif status == 1:
+        
+        re = ''
+        con = ''
+
+        for c in Content:
+            if c == '（':
+                c = '('
+
+            if c == '）':
+                c = ')'
+
+            if c == '，':
+                c = ','
+
+            con += c
+ 
+
+        if con[0] == '#':
+
+            if len(con) == 1:
+
+                u.status=0
+                db.session.add(u)
+                db.session.commit()
+
+                return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, '*******点菜结束*******')
+
+            else:
+                li = getFoodNumList(con)
+
+                if li is not None:
+                    foodNameList = []
+
+                    ord = Order(user_id = u.id)
+                    ord.confirmed = 0
+                    db.session.add(ord)
+
+                    for food_id in li:
+                        fo = Food.query.filter_by(id=food_id)
+                        if fo is not None:
+                            foodNameList.append(fo.name)
+                            ordDetail = OrderDetail.from_json({'food_id':food_id, 'order_id':ord})
+                            db.session.add(ordDetail)
+
+                        else:
+                            return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, '/**您点的菜中有不存在的哦，请不要瞎点**/')              
+
+                    db.session.commit()
+
+                    u.status = 2
+                    u.lastorder = ord.id
+                    db.session.add(u)
+                    db.session.commit()
+
+
+                    con = ''
+
+                    con += '您的订单：【 '
+
+                    for name in foodNameList:
+                        con += name
+                        con += ' '
+
+                    con += '】 确认中。。。\n\n回复y确认，回复n撤销'
+
+                    return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, con)
+
+                else:
+                    return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, '/**格式有误，正确格式为:\n#(id,id, ...)**/')
+
+        else:
+            return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, 'haha')
+
+    elif status == 2:
+        lo = Order.query.filter_by(id = u.lastorder)
+
+        if lo is None:
+
+            u.status=0
+            db.session.add(u)
+            db.session.commit()
+
+            con = ''
+            con += '系统出现错误，已为您回复初始状态，发送0开始点菜'
+
+            return TextMsg(None,FromUserName, ToUserName, str(int(time.time())), MsgType, con)
+
+        foodNameList = []
+
+        details = OrderDetail.query.filter_by(order_id = lo.id)
+
+        for detail in details:
+            food = Food.query.filter_by(id = detail.food_id)
+
+            foodNameList.append(food.name)
+
+        if Content == 'y':
+            lo.comfired = 1
+
+            db.session.add(lo)
+            db.session.commit()
+
+            con = ''
+
+            con += '您的订单：【 '
+
+            for name in foodNameList:
+                con += name
+                con += ' '
+
+            con += '】 已确认'
+
+            u.status=0
+            db.session.add(u)
+            db.session.commit()
+
+        else if Content == 'n':
+
+            db.session.delete(lo)
+            db.session.commit()
+
+            con = ''
+
+            con += '您的订单：【 '
+
+            for name in foodNameList:
+                con += name
+                con += ' '
+
+            con += '】 已撤销'
+
+            u.status=0
+            db.session.add(u)
+            db.session.commit()
+
+        else:
+            con = ''
+
+            con += '您的订单：【 '
+
+            for name in foodNameList:
+                con += name
+                con += ' '
+
+            con += '】 确认中。。。\n\n回复y确认，回复n撤销'
+
+
+    return DefaultReply(FromUserName, ToUserName)

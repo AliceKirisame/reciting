@@ -1,0 +1,24 @@
+﻿/api/login
+POST    
+{
+    "e_mail"="a@a.com",
+    "password"="a"
+}
+
+/api/register
+POST    
+{
+    "e_mail"="a@a.com",
+    "password"="a",
+    "username" = "a"
+}
+
+/api/order
+POST    
+{
+    "e_mail"="a@a.com",
+    "password"="a",
+    "count"=2             //点菜个数
+    "0" = 2,               //第一个才为id2的菜 编号0
+    "1" = 1,
+}
