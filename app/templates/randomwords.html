@@ -8,7 +8,7 @@
     <a style="display:block" class="btn btn-default" href= {% if has_next %} "{{ url_for('main.randomwords', id=num+1) }}" {% else %} "#" {% endif%} >next</a>
     <div class="row">
         <div class="plus-one col-md-4">
-            <a class="btn btn-primary" href= "{{ url_for('main.forgetword', id=num) }}"><span>+1</span></a>
+            <a class="btn btn-primary" href= "{{ url_for('main.one', wordstr=word) }}"><span>+1</span></a>
         </div>
     </div>
 {% endblock %}

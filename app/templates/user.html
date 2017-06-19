@@ -67,11 +67,32 @@
             {% if current_user.is_authenticated and user != current_user and user.is_following(current_user) %}
             | <span class="label label-default"> Follows you </span>
             {% endif %}
+
+        </p>
+
+        <p>
+            {% if current_user.is_authenticated and user == current_user %}
+                <a class="btn btn-primary" href="{{url_for('main.forgettablewords')}}">
+                        Forgettable Words
+                </a>
+
+                <a class="btn btn-primary" href="{{url_for('main.iteration1')}}">
+                        Iteration1
+                </a>
+
+                <a class="btn btn-primary" href="{{url_for('main.iteration2')}}">
+                        Iteration2
+                </a>
+
+                <a class="btn btn-primary" href="{{url_for('main.iteration3')}}">
+                        Iteration3
+                </a>
+            {% endif %}
         </p>
 
         <h3> Post by {{ user.username }} </h3>
         
-        {% include '_posts.html '%}
+        {% include '_posts.html' %}
 
     </div>
 

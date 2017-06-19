@@ -10,6 +10,33 @@ from . import db, loginmanager
 from .exceptions import ValidationError
 
 
+class Iteration1(db.Model):
+    __tablename__ = 'one'
+
+    id = db.Column(db.Integer, primary_key=True)
+    str = db.Column(db.String(64))
+    count = db.Column(db.Integer, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+
+class Iteration2(db.Model):
+    __tablename__ = 'two'
+
+    id = db.Column(db.Integer, primary_key=True)
+    str = db.Column(db.String(64))
+    count = db.Column(db.Integer, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+
+class Iteration3(db.Model):
+    __tablename__ = 'more'
+
+    id = db.Column(db.Integer, primary_key=True)
+    str = db.Column(db.String(64))
+    count = db.Column(db.Integer, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+
 class ForgettableWord(db.Model):
     __tablename__ = 'forgettablewords'
 
@@ -27,12 +54,13 @@ class RandomWord(db.Model):
 
     @staticmethod
     def insert_words():
-        words = open('1.txt', mode='r')
+        words = open('list1.txt', mode='r')
         if words is None:
             print('error')
             return False
 
         for word in words:
+            word = word.strip('\n')
             w = RandomWord(str=word)
             db.session.add(w)
             db.session.commit()
@@ -197,6 +225,16 @@ class User(UserMixin, db.Model):
 
     forgeted_words = db.relationship('ForgettableWord', backref='user',
                                      lazy='dynamic')
+
+    iteration1 = db.relationship('Iteration1', backref='user',
+                                 lazy='dynamic')
+
+    iteration2 = db.relationship('Iteration2', backref='user',
+                                 lazy='dynamic')
+
+    iteration3 = db.relationship('Iteration3', backref='user',
+                                 lazy='dynamic')
+
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)

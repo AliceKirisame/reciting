@@ -78,3 +78,30 @@ div.plus-one a {
 div.plus-one span {
     text-align: center
 }
+
+ul.words {
+    list-style-type: none;
+}
+
+ul.words li.word {
+    padding: 8px;
+    margin-top: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+ul.words li.word:hover {
+    background-color: #f0f0f0;
+}
+
+div.word-content {
+    margin-top: 8px;
+}
+
+div.word-count {
+    margin-top: 8px
+}
+
+div.word-content a{
+    color:#555555;
+    text-decoration: none;
+}

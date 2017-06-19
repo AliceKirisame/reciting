@@ -6,7 +6,8 @@ from flask.ext.login import login_required, current_user
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
 from ..decorator import permission_required, admin_required
-from ..models import Permission, User, Role, Post, Comment, RandomWord, ForgettableWord
+from ..models import Permission, User, Role, Post, Comment, RandomWord
+from ..models import ForgettableWord, Iteration1, Iteration2, Iteration3
 from .. import db
 
 
@@ -50,42 +51,230 @@ def index():
                            pagination=pagination, show_followed=show_followed)
 
 
+@main.route('/iteration1')
+@login_required
+def iteration1():
+    page = int(request.args.get('page') or 1)
+
+    per_page = 10
+
+    pagination = current_user.iteration1.paginate(
+                                     page, per_page=per_page,
+                                     error_out=False)
+
+    words = pagination.items
+
+    for w in words:
+        print(w.str)
+
+    resp = make_response(render_template('iteration.html',
+                                         title='Iteration1',
+                                         words=words,
+                                         pagination=pagination,
+                                         endpoint='main.iteration1',
+                                         nextIter='main.two'))
+
+    resp.set_cookie('i1p', str(page), max_age=30*24*60*60)
+
+    return resp
+
+
+@main.route('/iteration2')
+@login_required
+def iteration2():
+    page = int(request.args.get('page') or 1)
+
+    per_page = 10
+
+    pagination = current_user.iteration2.paginate(
+                                     page, per_page=per_page,
+                                     error_out=False)
+
+    words = pagination.items
+
+    resp = make_response(render_template('iteration.html',
+                                         title='Iteration2',
+                                         words=words,
+                                         pagination=pagination,
+                                         endpoint='main.iteration2',
+                                         nextIter='main.more'))
+
+    resp.set_cookie('i2p', str(page), max_age=30*24*60*60)
+
+    return resp
+
+
+@main.route('/iteration3')
+@login_required
+def iteration3():
+    page = int(request.args.get('page') or 1)
+
+    per_page = 10
+
+    '''pagination = current_user.iteration3.order_by(
+                                        Iteration3.count.desc()
+                                    ).paginate(
+                                     page, per_page=per_page,
+                                     error_out=False)'''
+
+    pagination = current_user.iteration3.paginate(
+                                     page, per_page=per_page,
+                                     error_out=False)
+
+    words = pagination.items
+
+    resp = make_response(render_template('iteration.html',
+                                         title='Iteration3',
+                                         words=words,
+                                         pagination=pagination,
+                                         endpoint='main.iteration3',
+                                         nextIter='main.muchmore'))
+
+    resp.set_cookie('i3p', str(page), max_age=30*24*60*60)
+
+    return resp
+
+
+@main.route('/one/<wordstr>')
+@login_required
+def one(wordstr):
+    word = RandomWord.query.filter_by(str=wordstr).first()
+
+    if word is None:
+        abort(404)
+
+    id = word.id
+
+    fw = Iteration1.query.filter_by(str=word.str).first()
+
+    if fw is None:
+        fw = Iteration1(str=word.str, count=1, user=current_user._get_current_object())
+    else:
+        fw.count += 1
+
+    db.session.add(fw)
+    db.session.commit()
+
+    #flash('happy to plus one')
+
+    return redirect(url_for('main.randomwords', id=id))
+
+
+@main.route('/two/<wordstr>')
+@login_required
+def two(wordstr):
+    page = int(request.cookies.get('i1p', 1))
+
+    word = RandomWord.query.filter_by(str=wordstr).first()
+
+    if word is None:
+        abort(404)
+
+    fw = Iteration2.query.filter_by(str=word.str).first()
+
+    if fw is None:
+        fw = Iteration2(str=word.str, count=1, user=current_user._get_current_object())
+    else:
+        fw.count += 1
+
+    db.session.add(fw)
+    db.session.commit()
+
+    #flash('happy to plus one')
+
+    return redirect(url_for('main.iteration1', page=page))
+
+
+@main.route('/more/<wordstr>')
+@login_required
+def more(wordstr):
+    page = int(request.cookies.get('i2p', 1))
+
+    word = RandomWord.query.filter_by(str=wordstr).first()
+
+    if word is None:
+        abort(404)
+
+    fw = Iteration3.query.filter_by(str=word.str).first()
+
+    if fw is None:
+        fw = Iteration3(str=word.str, count=1, user=current_user._get_current_object())
+    else:
+        fw.count += 1
+
+    db.session.add(fw)
+    db.session.commit()
+
+    #flash('happy to plus one')
+
+    return redirect(url_for('main.iteration2', page=page))
+
+
+@main.route('/muchmore/<wordstr>')
+@login_required
+def muchmore(wordstr):
+    page = int(request.cookies.get('i2p', 1))
+
+    word = RandomWord.query.filter_by(str=wordstr).first()
+
+    if word is None:
+        abort(404)
+
+    fw = Iteration3.query.filter_by(str=word.str).first()
+
+    if fw is None:
+        fw = Iteration3(str=word.str, count=1, user=current_user._get_current_object())
+    else:
+        fw.count += 1
+
+    db.session.add(fw)
+    db.session.commit()
+
+    #flash('happy to plus one')
+
+    return redirect(url_for('main.iteration3', page=page))
+
+
 @main.route('/forgettablewords')
 @login_required
 def forgettablewords():
-    page = request.args.get('page') or 1
+    page = int(request.args.get('page') or 1)
 
     per_page = current_app.config.get('FLASK_WORDS_PER_PAGE') or 10
 
-    pagination = current_user.forgeted_words.paginate(page, per_page=per_page,
-                                                      error_out=False)
+    pagination = current_user.forgeted_words.order_by(
+                                        ForgettableWord.count.desc()
+                                    ).paginate(
+                                     page, per_page=per_page,
+                                     error_out=False)
 
     words = pagination.items
 
     return render_template('forgettablewords.html',
                            words=words,
                            pagination=pagination,
-                           endpoint='main.forgettablewords')
+                           endpoint='main.forgettablewords',
+                           nextIter='main.two')
 
 
 @main.route('/forgetword/<int:id>')
 @login_required
-def forgetword(word):
+def forgetword(id):
     word = RandomWord.query.get_or_404(id)
 
-    word = ForgettableWord.query.filter_by(str=word.str).first()
+    fw = ForgettableWord.query.filter_by(str=word.str).first()
 
-    if word is None:
-        word = ForgettableWord(str=word, count=1, user=current_user._get_current_object())
+    if fw is None:
+        fw = ForgettableWord(str=word.str, count=1, user=current_user._get_current_object())
     else:
-        word.count += 1
+        fw.count += 1
 
-    db.session.add(word)
+    db.session.add(fw)
     db.session.commit()
 
     flash('happy to plus one')
 
-    return redirect('main.randomwords', id=word.id)
+    return redirect(url_for('main.randomwords', id=id))
 
 
 @main.route('/randomwords/<int:id>')

@@ -1,13 +1,19 @@
-<ul class="words">
+<table class="table table-hover words">
     {% for word in words %}
-        <li class="word">
+    <tr>
+        <td>
             <div class="word-content">
-                {{word.str}}
+                <a href= {{"http://m.youdao.com/dict?q="+word.str}} > {{word.str}} </a>
             </div>
-
+        </td>
+        <td>
             <div class="word-count">
                 <span class="badge"> {{word.count}} </span>
+                 <a class="btn btn-default" href="{{url_for(nextIter, wordstr=word.str)}}">
+                        +1
+                </a>
             </div>
-        </li>
+        </td>
+    </tr>
     {% endfor %}
 </ul>
