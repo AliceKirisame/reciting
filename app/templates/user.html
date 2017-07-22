@@ -75,7 +75,7 @@
                 <a class="btn btn-primary" href="{{url_for('main.forgettablewords')}}">
                         Forgettable Words
                 </a>
-
+                <div style="padding-bottom:5px">
                 <a class="btn btn-primary" href="{{url_for('main.iteration1')}}">
                         Iteration1
                 </a>
@@ -87,6 +87,15 @@
                 <a class="btn btn-primary" href="{{url_for('main.iteration3')}}">
                         Iteration3
                 </a>
+                </div>
+                <div style="padding-bottom:5px">
+                <a class='btn btn-default' href="{{ url_for('exam.index') }}" >测验</a>
+                <a class='btn btn-default' href="{{ url_for('exam.newWord') }}" >添加新单词</a>
+                </div>
+
+                <div style="padding-bottom:5px">
+                <a class='btn btn-default' href="{{ url_for('main.showtmp') }}" >tmp words</a>
+                </div>
             {% endif %}
         </p>
 

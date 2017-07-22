@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %} select {% endblock %}
+
+{% block page_content %}
+    <div class="group-id">
+    {% for i in range(length) %}    
+            <a href="{{url_for('exam.examIt', id=i+1)}}"><span class="badge"> {{i+1}} </span>
+    {% endfor %}
+    </div>
+{% endblock %}

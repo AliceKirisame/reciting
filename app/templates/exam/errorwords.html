@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title%} error words {% endblock %}
+
+{% block page_content%}
+    <div class="page-header">
+        <h3> 错了{{en}}个 </h3>
+    </div>
+
+    <div>
+        {% if en != 0 %}
+        {% for i in range(en) %}
+            <div>
+                <p>{{el[i]}}</p>
+            </div>
+        {% endfor %}
+        {% else %}
+            <p>{{pawd[id]}}</p>
+        {% endif %}
+    </div>
+
+{% endblock %}

@@ -10,6 +10,22 @@ from . import db, loginmanager
 from .exceptions import ValidationError
 
 
+class TmpWord(db.Model):
+    __tablename__ = 'tmpwords'
+
+    id = db.Column(db.Integer, primary_key=True)
+    str = db.Column(db.String(64))
+
+
+class InputWord(db.Model):
+    __tablename__ = 'inputwords'
+    id = db.Column(db.Integer, primary_key=True)
+    word = db.Column(db.String(64))
+    group = db.Column(db.Integer)
+    meaning = db.Column(db.String(64))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+
 class Iteration1(db.Model):
     __tablename__ = 'one'
 
@@ -54,7 +70,7 @@ class RandomWord(db.Model):
 
     @staticmethod
     def insert_words():
-        words = open('list1.txt', mode='r')
+        words = open('1.txt', mode='r')
         if words is None:
             print('error')
             return False

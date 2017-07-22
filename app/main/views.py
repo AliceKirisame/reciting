@@ -6,7 +6,7 @@ from flask.ext.login import login_required, current_user
 from . import main
 from .forms import EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
 from ..decorator import permission_required, admin_required
-from ..models import Permission, User, Role, Post, Comment, RandomWord
+from ..models import Permission, User, Role, Post, Comment, RandomWord, TmpWord
 from ..models import ForgettableWord, Iteration1, Iteration2, Iteration3
 from .. import db
 
@@ -49,6 +49,39 @@ def index():
 
     return render_template('index.html', form=form, posts=posts,
                            pagination=pagination, show_followed=show_followed)
+
+
+@main.route('/showtmp')
+@login_required
+def showtmp():
+    page = request.args.get('page', 1, type=int)
+
+    query = TmpWord.query
+
+    pagination = query.order_by(TmpWord.id.desc()).paginate(
+        page, per_page=10, error_out=False
+    )
+
+    words = pagination.items
+
+    return render_template('iteration.html',
+                           title='Tmp Words',
+                           words=words,
+                           pagination=pagination,
+                           endpoint='main.showtmp',
+                           nextIter='main.tmp')
+
+
+@main.route('/tmp/<wordstr>')
+@login_required
+def tmp(wordstr):
+    tw = TmpWord()
+    tw.str = wordstr
+
+    db.session.add(tw)
+    db.session.commit()
+
+    return wordstr
 
 
 @main.route('/iteration1')
@@ -157,7 +190,7 @@ def one(wordstr):
 
     #flash('happy to plus one')
 
-    return redirect(url_for('main.randomwords', id=id))
+    return redirect(url_for('main.randomwords', id=id+1))
 
 
 @main.route('/two/<wordstr>')
